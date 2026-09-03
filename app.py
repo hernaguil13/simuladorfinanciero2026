@@ -1,123 +1,191 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 
-# 1. Configuración de la página y Estética Visual "Gamificada" (Estudiantes)
-st.set_page_config(page_title="🏆 Desafío Inversionista", page_icon="💰", layout="centered")
+# 1. Configuración de la página y Estética Visual
+st.set_page_config(page_title="Desafío Inversionista", page_icon="🏆", layout="centered")
 
-# Estilos personalizados para colores llamativos y cajas interactivas
+# Estilos personalizados mejorados
+# Estilos personalizados: Tema "Dashboard Empresarial"
 st.markdown("""
     <style>
-    .main { background-color: #f7f9fc; }
-    h1 { color: #2E4053; text-align: center; font-family: 'Comic Sans MS', sans-serif; }
-    .card-tec { background-color: #EBF5FB; padding: 20px; border-radius: 15px; border-left: 8px solid #3498DB; margin-bottom: 15px; }
-    .card-dpf { background-color: #EAFAF1; padding: 20px; border-radius: 15px; border-left: 8px solid #2ECC71; margin-bottom: 15px; }
-    .card-div { background-color: #FEF9E7; padding: 20px; border-radius: 15px; border-left: 8px solid #F1C40F; margin-bottom: 15px; }
-    .resultado-box { background-color: #2C3E50; color: white; padding: 25px; border-radius: 15px; text-align: center; font-size: 24px; font-weight: bold; }
+    /* 1. Fondo principal: Degradado muy sutil y elegante (Gris/Azul claro) */
+    .stApp {
+        background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+    }
+    
+    /* 2. Panel lateral (Sidebar): Blanco puro con sombra para separarlo del fondo */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+    }
+    
+    /* 3. Título principal con tipografía corporativa más sobria */
+    h1 { 
+        color: #0f172a; 
+        text-align: center; 
+        font-weight: 800; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        letter-spacing: -0.5px;
+    }
+    
+    /* 4. Subtítulos y textos generales más elegantes */
+    h3 { color: #1e293b !important; }
+    p { color: #475569; }
+    
+    /* 5. Tarjetas estilo Widget Financiero: Blancas, con sombras suaves y bordes de colores institucionales */
+    .card-tec { background-color: #ffffff; padding: 22px; border-radius: 8px; border-left: 6px solid #2563eb; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1); }
+    .card-dpf { background-color: #ffffff; padding: 22px; border-radius: 8px; border-left: 6px solid #16a34a; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1); }
+    .card-div { background-color: #ffffff; padding: 22px; border-radius: 8px; border-left: 6px solid #d97706; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1); }
+    
+    /* 6. Mejorar la apariencia de los Radio buttons (Opciones de inversión) */
+    .stRadio > label { font-weight: 600; font-size: 16px; color: #0f172a; }
+    
+    /* 7. Mejorar el bloque de Métricas (Resultados finales) para que parezcan botones financieros */
+    [data-testid="stMetricValue"] {
+        color: #0f172a;
+        font-weight: bold;
+       
+    }
     </style>
 """, unsafe_allow_html=True)
-
 st.title("🏆 ¡El Gran Juego del Dinero!")
-st.markdown("<p style='text-align: center; font-size: 18px;'>Conviértete en Ingeniero Financiero. Toma una decisión y descubre tu futuro económico.</p>", unsafe_allow_html=True)
-st.markdown("---")
+st.markdown("<p style='text-align: center; font-size: 18px; color: #4B5563;'>Conviértete en Ingeniero Financiero. Toma decisiones estratégicas y descubre tu futuro económico.</p>", unsafe_allow_html=True)
+st.divider()
 
-# 2. Configuración Inicial del Participante
-st.sidebar.header("🚀 Tu Configuración Base")
-capital_inicial = st.sidebar.number_input("💰 ¿Con cuánto dinero empiezas? (Bs)", min_value=100, value=50000, step=1000)
-meses = st.sidebar.slider("📅 ¿Cuántos meses vas a jugar?", min_value=1, max_value=24, value=12)
+# 2. Configuración Inicial del Participante en un Expander para limpieza visual
+with st.sidebar:
+    st.header("🚀 Tu Punto de Partida")
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135673.png", width=100) # Ícono decorativo
+    capital_inicial = st.number_input("💰 Capital Inicial (Bs)", min_value=100, value=50000, step=1000, help="El dinero con el que empiezas el juego.")
+    meses = st.slider("📅 Horizonte de Inversión (Meses)", min_value=1, max_value=60, value=12, help="¿Por cuánto tiempo dejarás tu dinero invertido?")
 
-# 3. Selección Exclusiva de Opción (Radio Buttons Interactivos)
-st.subheader("🎯 Elige tu Camino de Inversión")
+# 3. Selección Exclusiva de Opción
+st.subheader("🎯 Elige tu Estrategia de Inversión")
 opcion_elegida = st.radio(
-    "Selecciona una sola estrategia para ver su simulación:",
-    ["Opción A: Acciones Tecnológicas 🚀", "Opción B: Guardar en DPF (Banco) 🏦", "Opción C: Portafolio Diversificado ⚖️"],
-    index=0
+    "Selecciona un camino para simular tu futuro:",
+    ["A: Acciones Tecnológicas 🚀 (Alto Riesgo)", "B: Plazo Fijo en Banco 🏦 (Cero Riesgo)", "C: Portafolio Diversificado ⚖️ (Riesgo Moderado)"],
+    index=0,
+    horizontal=False
 )
 
-# 4. Parámetros Modificables dinámicamente según la opción elegida
-st.markdown("### ⚙️ Modificar Ajustes del Mercado (Rendimientos y Riesgos)")
+st.divider()
+st.markdown("### ⚙️ Sala de Control del Mercado")
 
-# Estructuras lógicas que cambian según el botón presionado
-if "Opción A" in opcion_elegida:
-    st.markdown('<div class="card-tec"><h3>💥 Modo: Alta Volatilidad (Acciones Tec)</h3><p>Estás invirtiendo en empresas tecnológicas nuevas. ¡Puedes volverte millonario o perderlo todo!</p></div>', unsafe_allow_html=True)
+# Variables iniciales para el motor
+historial = [capital_inicial]
+color_grafico = "#000000"
+nombre_columna = "Patrimonio"
+
+# 4. Lógica y Entorno según la selección
+if "A:" in opcion_elegida:
+    st.markdown('<div class="card-tec"><h3>💥 Modo: Alta Volatilidad (Acciones Tec)</h3><p>Inviertes en startups y tecnología. El potencial de ganancia es brutal, pero el riesgo de perder gran parte de tu dinero es muy real.</p></div>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        rendimiento_a = st.slider("📈 Rendimiento si el mes es BUENO (%)", min_value=5, max_value=50, value=20) / 100
+        rendimiento_a = st.number_input("📈 Retorno Mes Bueno (%)", value=20.0, step=1.0) / 100
     with col2:
-        riesgo_a = st.slider("⚠️ Probabilidad de CAÍDA en el mes (%)", min_value=10, max_value=90, value=40) / 100
-    
-    perdida_a = st.slider("📉 Cuánto capital pierdes si el mes es MALO (%)", min_value=10, max_value=90, value=50) / 100
+        perdida_a = st.number_input("📉 Caída Mes Malo (%)", value=15.0, step=1.0) / 100
+    with col3:
+        riesgo_a = st.slider("⚠️ Probabilidad de Caída", min_value=0, max_value=100, value=40, format="%d%%") / 100
 
-    # Ejecución del Motor para la Opción A
-    historial = [capital_inicial]
+    # Motor de cálculo
     for m in range(1, meses + 1):
-        dado = np.random.rand()
-        if dado <= riesgo_a:
-            nuevo_valor = historial[-1] * (1 - perdida_a) # Ciclo alcista negativo / pérdida
+        if np.random.rand() <= riesgo_a:
+            historial.append(historial[-1] * (1 - perdida_a))
         else:
-            nuevo_valor = historial[-1] * (1 + rendimiento_a) # Ganancia mensual
-        historial.append(nuevo_valor)
-        
-    color_grafico = ["#3498DB"]
-    nombre_columna = "Tu Dinero en Acciones Tec"
+            historial.append(historial[-1] * (1 + rendimiento_a))
+            
+    color_grafico = "#0284C7"
+    nombre_columna = "Acciones Tecnológicas"
 
-elif "Opción B" in opcion_elegida:
-    st.markdown('<div class="card-dpf"><h3>🏦 Modo: Ultra-Conservador (Plazo Fijo)</h3><p>Tu dinero está seguro en una bóveda bancaria. No hay riesgo de pérdida, pero crece muy despacio.</p></div>', unsafe_allow_html=True)
+elif "B:" in opcion_elegida:
+    st.markdown('<div class="card-dpf"><h3>🏦 Modo: Ultra-Conservador (Plazo Fijo)</h3><p>Tu dinero está en una bóveda bancaria. Crece lento, pero seguro.</p></div>', unsafe_allow_html=True)
     
-    rendimiento_b = st.slider("📈 Rendimiento Fijo Mensual (%)", min_value=0.1, max_value=5.0, value=0.4, step=0.1) / 100
+    rendimiento_b = st.slider("📈 Tasa de Interés Mensual Fija (%)", min_value=0.1, max_value=2.0, value=0.4, step=0.1, help="En la vida real, los bancos dan rendimientos anuales, aquí lo vemos mensualizado.") / 100
+    inflacion = st.slider("🔥 Inflación Mensual Estimada (%)", min_value=0.0, max_value=2.0, value=0.2, step=0.1) / 100
     
-    st.info("⚠️ Recordatorio para la clase: El riesgo aquí es del 0%, pero la inflación se comerá tu poder de compra en el mundo real.")
+    if rendimiento_b <= inflacion:
+        st.warning("⚠️ Cuidado: Tu rendimiento es menor o igual a la inflación. Estás perdiendo poder adquisitivo real.")
 
-    # Ejecución del Motor para la Opción B
-    historial = [capital_inicial]
+    # Motor de cálculo
     for m in range(1, meses + 1):
-        nuevo_valor = historial[-1] * (1 + rendimiento_b)
-        historial.append(nuevo_valor)
+        historial.append(historial[-1] * (1 + rendimiento_b))
         
-    color_grafico = ["#2ECC71"]
-    nombre_columna = "Tu Dinero en el Banco (DPF)"
+    color_grafico = "#16A34A"
+    nombre_columna = "Depósito a Plazo Fijo"
 
 else:
-    st.markdown('<div class="card-div"><h3>⚖️ Modo: Ingeniero Financiero (Diversificado)</h3><p>Distribuyes inteligentemente: 40% Bienes Raíces (alquileres), 40% Acciones estables y 20% Fondo de Emergencia.</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="card-div"><h3>⚖️ Modo: Ingeniero Financiero (Diversificado)</h3><p>40% Bienes Raíces, 40% Acciones y 20% Renta Fija. Tienes un crecimiento constante con pequeños sustos del mercado.</p></div>', unsafe_allow_html=True)
     
-    rendimiento_c = st.slider("📈 Rendimiento Combinado Seguro (%)", min_value=1.0, max_value=15.0, value=7.5, step=0.5) / 100
-    
-    st.success("💡 Consejo pro: Al estar diversificado, tienes un flujo de caja constante libre de sustos extremos.")
+    rendimiento_c = st.slider("📈 Rendimiento Esperado Mensual (%)", min_value=1.0, max_value=10.0, value=3.0, step=0.5) / 100
+    volatilidad = st.slider("🎢 Nivel de Volatilidad (Ruido del mercado)", min_value=1.0, max_value=5.0, value=2.0, step=0.5) / 100
 
-    # Ejecución del Motor para la Opción C
-    historial = [capital_inicial]
+    # Motor de cálculo (Rendimiento base + un factor de ruido aleatorio normal)
     for m in range(1, meses + 1):
-        nuevo_valor = historial[-1] * (1 + rendimiento_c)
-        historial.append(nuevo_valor)
+        ruido = np.random.normal(0, volatilidad)
+        retorno_real = rendimiento_c + ruido
+        historial.append(historial[-1] * (1 + retorno_real))
         
-    color_grafico = ["#F1C40F"]
-    nombre_columna = "Tu Dinero Diversificado"
+    color_grafico = "#CA8A04"
+    nombre_columna = "Portafolio Diversificado"
 
-# 5. Renderizado Exclusivo de Gráficos y Resultados de la Opción Seleccionada
-st.markdown("---")
-st.subheader("📊 Línea de Tiempo de tu Patrimonio")
+# 5. Renderizado de Gráficos Interactivos (Plotly)
+st.divider()
+st.subheader("📊 Simulación de tu Patrimonio en el Tiempo")
 
-# Crear DataFrame con el nombre específico de la opción
-df_simulado = pd.DataFrame({"Mes": list(range(meses + 1)), nombre_columna: historial}).set_index("Mes")
+# Preparar DataFrame
+df_simulado = pd.DataFrame({
+    "Mes": list(range(meses + 1)), 
+    "Capital (Bs)": historial
+})
 
-# Mostrar solo el gráfico de la opción elegida
-st.line_chart(df_simulado, color=color_grafico[0])
+# Crear gráfico interactivo
+fig = px.area(
+    df_simulado, 
+    x="Mes", 
+    y="Capital (Bs)", 
+    markers=True,
+    color_discrete_sequence=[color_grafico],
+    title=f"Evolución de Inversión: {nombre_columna}"
+)
+fig.update_layout(xaxis_title="Meses Transcurridos", yaxis_title="Dinero Acumulado (Bs)", hovermode="x unified")
+st.plotly_chart(fig, use_container_width=True)
 
-# Mostrar Tarjeta de Resultado Final Impactante
+# 6. Tablero de Resultados Finales
+st.markdown("### 🏆 Resultado de tu Decisión")
 patrimonio_final = historial[-1]
 ganancia_neta = patrimonio_final - capital_inicial
+porcentaje_retorno = (ganancia_neta / capital_inicial) * 100
 
-st.markdown(f"""
-    <div class="resultado-box">
-        💰 PATRIMONIO FINAL: Bs {patrimonio_final:,.2f}<br>
-        <span style='font-size: 16px; color: #BDC3C7;'>
-            Resultado neto: {'🎉 Ganaste' if ganancia_neta >= 0 else '🚨 Perdiste'} Bs {abs(ganancia_neta):,.2f}
-        </span>
-    </div>
-""", unsafe_allow_html=True)
+col_res1, col_res2, col_res3 = st.columns(3)
+with col_res1:
+    st.metric(label="Capital Inicial", value=f"Bs {capital_inicial:,.2f}")
+with col_res2:
+    st.metric(label="Patrimonio Final", value=f"Bs {patrimonio_final:,.2f}", delta=f"{porcentaje_retorno:.2f}%")
+with col_res3:
+    st.metric(label="Ganancia/Pérdida Neta", value=f"Bs {ganancia_neta:,.2f}", delta=float(ganancia_neta))
 
-# Botón interactivo para repetir el escenario
+# Feedback dinámico
+if ganancia_neta > (capital_inicial * 0.5):
+    st.success("🌟 ¡Increíble! Eres un genio de las finanzas. Has hecho crecer tu patrimonio de forma masiva.")
+    st.balloons()
+elif ganancia_neta > 0:
+    st.info("👍 Buen trabajo. Lograste vencer al tiempo y sumar ganancias.")
+else:
+    st.error("🚨 ¡Bancarrota técnica o pérdidas graves! El mercado te ha dado una dura lección.")
+
+# 7. Botón de Re-simulación
+# 7. Botón de Re-simulación con Feedback Visual
 st.markdown("<br>", unsafe_allow_html=True)
-if st.button("🎲 ¡Volver a lanzar el destino! (Re-simular)"):
-    st.rerun()
+col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+
+with col_btn2:
+    if st.button("🎲 El mercado es incierto: ¡Volver a Simular!", use_container_width=True):
+        import time
+        # Muestra un mensaje de carga temporal para que el usuario note el click
+        with st.spinner("Lanzando los dados del mercado... 🎲"):
+            time.sleep(2) # Pausa de medio segundo para el suspenso
+        
+        st.rerun() # Reinicia la aplicación con los nuevos números
